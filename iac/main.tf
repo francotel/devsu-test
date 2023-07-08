@@ -65,3 +65,95 @@ module "secrets-manager" {
     },
   }
 }
+
+######   S3 ARTIFACT RESOURCES   ######
+module "s3_bucket_artifact" {
+  source = "terraform-aws-modules/s3-bucket/aws"
+
+  bucket = "s3-artifacts-${var.project}-${var.aws_region}-${var.env}"
+  # acl    = "private"
+
+  attach_deny_insecure_transport_policy = true
+  attach_require_latest_tls_policy      = true
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+
+  versioning = {
+    enabled = false
+  }
+
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        kms_master_key_id = module.kms.key_arn
+        sse_algorithm     = "aws:kms"
+      }
+    }
+  }
+
+  lifecycle_rule = [
+    {
+      id      = "artifact"
+      enabled = true
+
+      transition = [
+        {
+          days          = 30
+          storage_class = "ONEZONE_IA"
+        },
+        {
+          days          = 90
+          storage_class = "GLACIER"
+        },
+        {
+          days          = 180
+          storage_class = "DEEP_ARCHIVE"
+        }
+      ]
+      expiration = {
+        days = 365
+      }
+    }
+  ]
+}
+
+#####   S3 UPLOAD CONFIGURATIONS   ######
+resource "aws_s3_object" "object" {
+  depends_on = [
+    module.s3_bucket_artifact
+  ]
+  for_each    = fileset("./configs/", "**")
+  bucket      = module.s3_bucket_artifact.s3_bucket_id
+  key         = "cicd-conf/${each.value}"
+  source      = "./configs/${each.value}"
+  source_hash = md5(file("./configs/${each.value}"))
+}
+
+
+# #######   CODEBUILD RESOURCES   ######
+module "codebuild_api" {
+  source          = "./modules/codebuild"
+  project         = var.project
+  aws_account_id  = var.aws_account_id
+  region          = var.aws_region
+  env             = var.env
+  kms_id_artifact = module.kms.key_arn
+  build_timeout   = 60
+  compute_type    = "BUILD_GENERAL1_SMALL"
+  compute_image   = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+  compute_so      = "LINUX_CONTAINER"
+  buildspec_file  = "buildspec.yaml"
+  s3_artifact_arn = module.s3_bucket_artifact.s3_bucket_arn
+  artifacts       = "CODEPIPELINE"
+  type_artifact   = "CODEPIPELINE"
+
+  # branch_name    = "qa"
+
+  ## ADD ENV VARIABLES TO CODEBUILD ##
+  # env_vars_secret   = each.value.env_vars_secret
+  # env_netcore_project = var.env_netcore_project
+  retention_in_days = 30
+}
