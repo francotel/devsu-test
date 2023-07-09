@@ -65,3 +65,6 @@ variable "type_artifact" {
 
 variable "buildspec_file" {
 }
+
+variable "env_codebuild_vars" {
+}

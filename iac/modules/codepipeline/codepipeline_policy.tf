@@ -1,7 +1,11 @@
 data "aws_iam_policy_document" "policy" {
   statement {
     actions = [
-      "s3:*"
+      "s3:GetObject",
+      "s3:GetObjectVersion",
+      "s3:GetBucketVersioning",
+      "s3:PutObjectAcl",
+      "s3:PutObject"
     ]
     resources = [
       var.s3_artifact_arn,
@@ -9,25 +13,24 @@ data "aws_iam_policy_document" "policy" {
     ]
   }
   statement {
+    effect = "Allow"
     actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
+      "codebuild:BatchGetBuilds",
+      "codebuild:StartBuild"
     ]
     resources = [
-      "arn:aws:logs:${var.region}:${var.aws_account_id}:log-group:/aws/codebuild/cb-*"
+      "arn:aws:codebuild:${var.region}:${var.aws_account_id}:project/*"
     ]
   }
   statement {
     actions = [
-      "ssm:GetParameters",
-      "ssm:GetParameter",
-      "ssm:GetParametersByPath"
+      "codestar-connections:UseConnection"
     ]
     resources = [
-      "arn:aws:ssm:${var.region}:${var.aws_account_id}:parameter/${var.env}/*"
+      "*"
     ]
   }
+
   statement {
     effect = "Allow"
     actions = [
@@ -55,20 +58,15 @@ data "aws_iam_policy_document" "policy" {
   statement {
     effect = "Allow"
     actions = [
-      "ec2:DescribeInstances"
+      "events:*"
     ]
     resources = [
       "*"
     ]
   }
   statement {
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue"
-    ]
-    resources = [
-      "*"
-    ]
+    effect    = "Allow"
+    actions   = ["codestar-connections:UseConnection"]
+    resources = [aws_codestarconnections_connection.github.arn]
   }
-
 }

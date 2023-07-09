@@ -37,3 +37,10 @@ variable "tf_version" {
   description = "Terraform version that used for the project"
   type        = string
 }
+
+### CODEBUILD VARIABLES  ####
+variable "env_codebuild_vars" {
+  default = {
+  }
+}
+

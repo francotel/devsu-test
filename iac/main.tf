@@ -57,7 +57,7 @@ module "secrets-manager" {
       kms_key_id  = module.kms.key_id
       secret_key_value = {
         Organization = "francotel"
-        Host         = "sonarcloud.io"
+        Host         = "https://sonarcloud.io"
         Project      = "devsu-test"
         sonartoken   = "766f4d8b0298fc17b93add5c2f15cfb48b018a16"
       }
@@ -134,7 +134,7 @@ resource "aws_s3_object" "object" {
 
 
 # #######   CODEBUILD RESOURCES   ######
-module "codebuild_api" {
+module "codebuild_app" {
   source          = "./modules/codebuild"
   project         = var.project
   aws_account_id  = var.aws_account_id
@@ -143,7 +143,7 @@ module "codebuild_api" {
   kms_id_artifact = module.kms.key_arn
   build_timeout   = 60
   compute_type    = "BUILD_GENERAL1_SMALL"
-  compute_image   = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+  compute_image   = "aws/codebuild/standard:7.0"
   compute_so      = "LINUX_CONTAINER"
   buildspec_file  = "buildspec.yaml"
   s3_artifact_arn = module.s3_bucket_artifact.s3_bucket_arn
@@ -153,7 +153,24 @@ module "codebuild_api" {
   # branch_name    = "qa"
 
   ## ADD ENV VARIABLES TO CODEBUILD ##
-  # env_vars_secret   = each.value.env_vars_secret
-  # env_netcore_project = var.env_netcore_project
+  env_codebuild_vars = var.env_codebuild_vars
+
   retention_in_days = 30
+
+
+}
+
+#######   CODEPIPELINE RESOURCES   ######
+module "codepipeline_app" {
+  source          = "./modules/codepipeline"
+  project         = var.project
+  aws_account_id  = var.aws_account_id
+  region          = var.aws_region
+  env             = var.env
+  kms_id_artifact = module.kms.key_arn
+
+  s3_artifact_arn  = module.s3_bucket_artifact.s3_bucket_arn
+  s3_artifact_name = module.s3_bucket_artifact.s3_bucket_id
+
+  project_build = module.codebuild_app.build_name
 }

@@ -49,12 +49,6 @@ resource "aws_codebuild_project" "build" {
     #   type  = "PLAINTEXT"
     # }
 
-    # environment_variable {
-    #   name  = "NETCORE_PROJECT"
-    #   value = var.env_netcore_project
-    #   type  = "PLAINTEXT"
-    # }
-
     environment_variable {
       name  = "S3_ARTIFACT_NAME"
       value = split(":", var.s3_artifact_arn)[5]
@@ -62,29 +56,14 @@ resource "aws_codebuild_project" "build" {
     }
 
 
-    # dynamic "environment_variable" {
-    #   for_each = var.env_vars_secret
-    #   content {
-    #     name  = environment_variable.key
-    #     value = environment_variable.value
-    #     type  = "PARAMETER_STORE"
-    #   }
-    # }
-
-    # dynamic "environment_variable" {
-    #   for_each = var.cd_env_net_project
-    #   content {
-    #     name  = "NET-PROJECT"
-    #     value = environment_variable.value
-    #     type  = "PLAINTEXT"
-    #   }
-    # }
-
-    # environment_variable {
-    #   name  = "BRANCH"
-    #   value = var.branch_name
-    #   type  = "PLAINTEXT"
-    # }
+    dynamic "environment_variable" {
+      for_each = var.env_codebuild_vars
+      content {
+        name  = environment_variable.key
+        value = environment_variable.value
+        type  = "PLAINTEXT"
+      }
+    }
 
   }
 
