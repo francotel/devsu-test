@@ -19,14 +19,20 @@ phases:
       - wget -nv https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-3.3.0.1492-linux.zip
       - unzip ./sonar-scanner-cli-3.3.0.1492-linux.zip
       - export PATH=$PATH:/sonar-scanner-3.3.0.1492-linux/bin/
-      - ls -la
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION)
   build:
     commands:
       - cd demo-devops-java
-      - ls -la
       - mvn clean test    
       - mvn sonar:sonar -Dsonar.login=$LOGIN -Dsonar.host.url=$HOST -Dsonar.projectKey=$Project -Dsonar.organization=$Organization
       - sleep 5
       - curl https://sonarcloud.io/api/qualitygates/project_status?projectKey=$Project > result.json
       - cat result.json
       - if [ $(jq -r '.projectStatus.status' result.json) = ERROR ] ; then $CODEBUILD_BUILD_SUCCEEDING -eq 0 ;fi
+      - echo Build started on `date`
+      - echo Building the Docker image...
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
