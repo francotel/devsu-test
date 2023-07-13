@@ -65,6 +65,15 @@ resource "aws_codebuild_project" "build" {
       }
     }
 
+    dynamic "environment_variable" {
+      for_each = var.env_codebuild_output
+      content {
+        name  = environment_variable.key
+        value = environment_variable.value
+        type  = "PLAINTEXT"
+      }
+    }
+
   }
 
   logs_config {

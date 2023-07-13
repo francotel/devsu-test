@@ -70,5 +70,20 @@ data "aws_iam_policy_document" "policy" {
       "*"
     ]
   }
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetAuthorizationToken",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+      "ecr:*"
+    ]
+    resources = [
+      "*"
+    ]
+  }
 
 }

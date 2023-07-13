@@ -68,3 +68,6 @@ variable "buildspec_file" {
 
 variable "env_codebuild_vars" {
 }
+
+variable "env_codebuild_output" {
+}

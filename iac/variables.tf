@@ -44,3 +44,10 @@ variable "env_codebuild_vars" {
   }
 }
 
+##### SNYK VARIABLES   #####
+variable "snyk_token" {
+}
+variable "snyk_org" {
+}
+variable "sonar_token" {
+}

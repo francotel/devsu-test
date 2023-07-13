@@ -59,10 +59,19 @@ module "secrets-manager" {
         Organization = "francotel"
         Host         = "https://sonarcloud.io"
         Project      = "devsu-test"
-        sonartoken   = "766f4d8b0298fc17b93add5c2f15cfb48b018a16"
+        sonartoken   = var.sonar_token
       }
       recovery_window_in_days = 7
     },
+    secret-kv-snyk = {
+      description = "This is a key/value secret snyk"
+      kms_key_id  = module.kms.key_id
+      secret_key_value = {
+        snyk_token = var.snyk_token
+        synk_org   = var.snyk_org
+      }
+      recovery_window_in_days = 7
+    }
   }
 }
 
@@ -125,11 +134,22 @@ resource "aws_s3_object" "object" {
   depends_on = [
     module.s3_bucket_artifact
   ]
-  for_each    = fileset("./configs/", "**")
+  for_each    = fileset("./configs/cicd-conf/", "**")
   bucket      = module.s3_bucket_artifact.s3_bucket_id
   key         = "cicd-conf/${each.value}"
-  source      = "./configs/${each.value}"
-  source_hash = md5(file("./configs/${each.value}"))
+  source      = "./configs/cicd-conf/${each.value}"
+  source_hash = md5(file("./configs/cicd-conf/${each.value}"))
+}
+
+resource "aws_s3_object" "manifests" {
+  depends_on = [
+    module.s3_bucket_artifact
+  ]
+  for_each    = fileset("./configs/manifests/", "**")
+  bucket      = module.s3_bucket_artifact.s3_bucket_id
+  key         = "manifests/${each.value}"
+  source      = "./configs/manifests/${each.value}"
+  source_hash = md5(file("./configs/manifests/${each.value}"))
 }
 
 
@@ -152,11 +172,17 @@ module "codebuild_app" {
 
   # branch_name    = "qa"
 
-  ## ADD ENV VARIABLES TO CODEBUILD ##
+  ## ADD ENV VARIABLES TO CODEBUILD FROM TFVARS  ##
   env_codebuild_vars = var.env_codebuild_vars
+  env_codebuild_output = {
+    ENV_CB_ECR_URL      = module.ecr.repository_url
+    ENV_CB_ENV          = var.env
+    ENV_CB_S3_ARTIFACTS = module.s3_bucket_artifact.s3_bucket_id
+    ENV_CB_DOCKER_IMAGE = "app"
+    ENV_CB_ECR_NAME     = "ecr-${var.project}-${var.env}"
+  }
 
   retention_in_days = 30
-
 
 }
 
