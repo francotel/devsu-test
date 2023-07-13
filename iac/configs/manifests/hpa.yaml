@@ -16,5 +16,5 @@ spec:
       metric:
         name: http_requests_by_second
       target:
-        averageValue: 10
+        averageValue: 70
         type: AverageValue

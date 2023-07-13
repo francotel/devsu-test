@@ -68,7 +68,7 @@ module "secrets-manager" {
       kms_key_id  = module.kms.key_id
       secret_key_value = {
         snyk_token = var.snyk_token
-        synk_org   = var.snyk_org
+        snyk_org   = var.snyk_org
       }
       recovery_window_in_days = 7
     }

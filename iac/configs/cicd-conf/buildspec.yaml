@@ -38,8 +38,6 @@ phases:
       - curl https://sonarcloud.io/api/qualitygates/project_status?projectKey=$Project > result.json
       - cat result.json
       - if [ $(jq -r '.projectStatus.status' result.json) = ERROR ] ; then $CODEBUILD_BUILD_SUCCEEDING -eq 0 ;fi
-  post_build:
-    commands:
       - echo Build completed on `date`
       - aws s3 cp s3://$ENV_CB_S3_ARTIFACTS/cicd-conf/Dockerfile Dockerfile 
       - docker build -t $ENV_CB_DOCKER_IMAGE:$CODEBUILD_BUILD_NUMBER .
@@ -50,10 +48,18 @@ phases:
       - npm install snyk -g
       # Snyk auth
       - snyk --version
-      - snyk config set api=\"$Snyk_Token\"
+      - echo $LOGIN
+      - echo $Snyk_Token
+      - snyk config set api=$Snyk_Token
       - docker images
-      - snyk container test $ENV_CB_ECR_URL:34 --org=1a843d45-f70c-46ea-b623-7f0894af918d --report || true
+      - snyk container test $ENV_CB_ECR_URL:34 --org=$Snyk_Org --report || true
       - snyk container monitor $ENV_CB_ECR_URL:34
-      
       - echo Pushing the Docker image...
       - docker push $ENV_CB_ECR_URL:$CODEBUILD_BUILD_NUMBER
+  post_build:
+    commands:
+      - aws s3 cp s3://$ENV_CB_S3_ARTIFACTS/manifests . --recursive
+      - ls -la
+      - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+      - kubectl apply -f deployment.yml
+      - kubectl apply -f hpa.yml
